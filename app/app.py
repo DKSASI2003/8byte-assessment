@@ -3,9 +3,9 @@ from prometheus_flask_exporter import PrometheusMetrics
 import psycopg2
 import os
 
-app = Flask(__name__)
+main = Flask(__name__)
 
-metrics = PrometheusMetrics(app)
+metrics = PrometheusMetrics(main)
 
 DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")
@@ -13,21 +13,21 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
 
-@app.route("/")
+@main.route("/")
 def home():
     return jsonify({
         "message": "8byte DevOps Assignment"
     })
 
 
-@app.route("/health")
+@main.route("/health")
 def health():
     return jsonify({
         "status": "healthy"
     })
 
 
-@app.route("/db-check")
+@main.route("/db-check")
 def db_check():
 
     conn = psycopg2.connect(
@@ -45,4 +45,4 @@ def db_check():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    main.run(host="0.0.0.0", port=5000)

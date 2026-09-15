@@ -1,9 +1,9 @@
-from app.app import app
+from app.app import main
 
 
 def test_health():
 
-    client = app.test_client()
+    client = main.test_client()
 
     response = client.get("/health")
 
