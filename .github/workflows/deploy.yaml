@@ -33,8 +33,9 @@ jobs:
           pip install pytest
 
       - name: Run Unit Tests
+        working-directory: ./app
         run: |
-          pytest app/tests
+          pytest tests
 
       - name: Trivy Filesystem Scan
         uses: aquasecurity/trivy-action@master
