@@ -19,7 +19,29 @@ jobs:
 
     steps:
 
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Dependencies
+        run: |
+          pip install -r app/requirements.txt
+          pip install pytest
+
+      - name: Run Unit Tests
+        run: |
+          pytest app/tests
+
+      - name: Trivy Filesystem Scan
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -28,29 +50,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
-      - name: Login to ECR
+      - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build Docker Image
         run: |
-          docker build \
-            -t 8byte-app:${IMAGE_TAG} \
-            ./app
+          docker build -t 8byte-app:${IMAGE_TAG} ./app
 
       - name: Trivy Image Scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.33.1
         with:
-          image-ref: "8byte-app:${{ github.sha }}"
+          image-ref: 8byte-app:${{ github.sha }}
           severity: HIGH,CRITICAL
           exit-code: 1
 
-      - name: Tag Image
+      - name: Tag Docker Image
         run: |
           docker tag \
             8byte-app:${IMAGE_TAG} \
             ${{ vars.ECR_REPOSITORY }}:${IMAGE_TAG}
 
-      - name: Push Image
+      - name: Push Docker Image
         run: |
           docker push \
             ${{ vars.ECR_REPOSITORY }}:${IMAGE_TAG}
@@ -63,29 +83,60 @@ jobs:
 
     steps:
 
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
 
-          script: |
-            aws ecr get-login-password \
-              --region ap-south-1 | \
-            docker login \
-              --username AWS \
-              --password-stdin \
-              891377196933.dkr.ecr.ap-south-1.amazonaws.com
+      - name: Deploy via SSM
+        run: |
 
-            docker pull \
-              ${{ vars.ECR_REPOSITORY }}:${{ github.sha }}
+          aws ssm send-command \
+            --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy application" \
+            --parameters 'commands=[
+              "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 891377196933.dkr.ecr.ap-south-1.amazonaws.com",
+              "docker pull ${{ vars.ECR_REPOSITORY }}:${{ github.sha }}",
+              "docker stop app || true",
+              "docker rm app || true",
+              "docker run -d --restart always --name app -p 80:80 ${{ vars.ECR_REPOSITORY }}:${{ github.sha }}"
+            ]'
 
-            docker stop app || true
-            docker rm app || true
+  notify-failure:
 
-            docker run -d \
-              --restart always \
-              --name app \
-              -p 80:80 \
-              ${{ vars.ECR_REPOSITORY }}:${{ github.sha }}
+    if: failure()
+
+    needs:
+      - build
+      - deploy-staging
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Send Failure Email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+
+          subject: "8Byte Deployment Failed"
+
+          to: ${{ secrets.MAIL_TO }}
+          from: GitHub Actions
+
+          body: |
+            Deployment failed.
+
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            Workflow: ${{ github.workflow }}
+
+            Run URL:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
