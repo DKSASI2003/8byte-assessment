@@ -34,7 +34,7 @@ jobs:
 
       - name: Run Unit Tests
         run: |
-          pytest tests
+          pytest app/tests
 
       - name: Trivy Filesystem Scan
         uses: aquasecurity/trivy-action@master
