@@ -1,0 +1,91 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker Image
+        run: |
+          docker build \
+            -t 8byte-app:${IMAGE_TAG} \
+            ./app
+
+      - name: Trivy Image Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "8byte-app:${{ github.sha }}"
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
+      - name: Tag Image
+        run: |
+          docker tag \
+            8byte-app:${IMAGE_TAG} \
+            ${{ vars.ECR_REPOSITORY }}:${IMAGE_TAG}
+
+      - name: Push Image
+        run: |
+          docker push \
+            ${{ vars.ECR_REPOSITORY }}:${IMAGE_TAG}
+
+  deploy-staging:
+
+    needs: build
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+
+          script: |
+            aws ecr get-login-password \
+              --region ap-south-1 | \
+            docker login \
+              --username AWS \
+              --password-stdin \
+              891377196933.dkr.ecr.ap-south-1.amazonaws.com
+
+            docker pull \
+              ${{ vars.ECR_REPOSITORY }}:${{ github.sha }}
+
+            docker stop app || true
+            docker rm app || true
+
+            docker run -d \
+              --restart always \
+              --name app \
+              -p 80:80 \
+              ${{ vars.ECR_REPOSITORY }}:${{ github.sha }}

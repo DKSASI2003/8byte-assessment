@@ -1,0 +1,58 @@
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "region": "ap-south-1"
+  },
+
+  "metrics": {
+    "namespace": "8byte",
+    "metrics_collected": {
+
+      "cpu": {
+        "resources": ["*"],
+        "measurement": [
+          "cpu_usage_idle",
+          "cpu_usage_user",
+          "cpu_usage_system"
+        ]
+      },
+
+      "mem": {
+        "measurement": [
+          "mem_used_percent"
+        ]
+      },
+
+      "disk": {
+        "resources": ["*"],
+        "measurement": [
+          "used_percent"
+        ]
+      }
+    }
+  },
+
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+
+          {
+            "file_path": "/var/log/messages",
+            "log_group_name": "system-logs"
+          },
+
+          {
+            "file_path": "/var/log/app.log",
+            "log_group_name": "application-logs"
+          },
+
+          {
+            "file_path": "/var/log/nginx/access.log",
+            "log_group_name": "access-logs"
+          }
+        ]
+      }
+    }
+  }
+}
