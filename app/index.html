@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>8Byte Task Manager</title>
+</head>
+<body>
+
+<h1>Tasks</h1>
+
+<input id="task">
+<button onclick="addTask()">Add</button>
+
+<ul id="tasks"></ul>
+
+<script>
+
+async function loadTasks() {
+
+  const response = await fetch("/api/tasks")
+
+  const tasks = await response.json()
+
+  document.getElementById("tasks").innerHTML =
+    tasks.map(
+      t => `<li>${t.title}</li>`
+    ).join("")
+}
+
+async function addTask() {
+
+  const title =
+    document.getElementById("task").value
+
+  await fetch("/api/tasks", {
+
+    method: "POST",
+
+    headers: {
+      "Content-Type":"application/json"
+    },
+
+    body: JSON.stringify({
+      title
+    })
+  })
+
+  loadTasks()
+}
+
+loadTasks()
+
+</script>
+
+</body>
+</html>

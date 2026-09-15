@@ -1,48 +1,61 @@
-from flask import Flask, jsonify
-from prometheus_flask_exporter import PrometheusMetrics
-import psycopg2
-import os
+from flask import Flask, request, jsonify
+from db import get_connection
 
-main = Flask(__name__)
+app = Flask(__name__)
 
-metrics = PrometheusMetrics(main)
-
-DB_HOST = os.getenv("DB_HOST")
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-
-
-@main.route("/")
+@app.route("/")
 def home():
-    return jsonify({
-        "message": "8byte DevOps Assignment"
-    })
+    return {"service": "8byte Task API"}
 
-
-@main.route("/health")
+@app.route("/health")
 def health():
-    return jsonify({
-        "status": "healthy"
-    })
+    return {"status": "healthy"}
 
+@app.route("/api/tasks")
+def tasks():
+    conn = get_connection()
 
-@main.route("/db-check")
-def db_check():
+    cur = conn.cursor()
 
-    conn = psycopg2.connect(
-        host=DB_HOST,
-        database=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD
+    cur.execute(
+        "SELECT id,title FROM tasks"
     )
 
-    conn.close()
+    rows = cur.fetchall()
 
-    return jsonify({
-        "database": "connected"
-    })
+    return jsonify(
+        [
+            {
+                "id": r[0],
+                "title": r[1]
+            }
+            for r in rows
+        ]
+    )
 
+@app.route("/api/tasks", methods=["POST"])
+def create_task():
 
-if __name__ == "__main__":
-    main.run(host="0.0.0.0", port=5000)
+    title = request.json["title"]
+
+    conn = get_connection()
+
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        INSERT INTO tasks(title)
+        VALUES(%s)
+        """,
+        (title,)
+    )
+
+    conn.commit()
+
+    return {"status": "created"}
+
+if __name__ == "__app__":
+    app.run(
+        host="0.0.0.0",
+        port=5000
+    )

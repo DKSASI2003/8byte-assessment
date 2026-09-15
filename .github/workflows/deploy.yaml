@@ -53,9 +53,11 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build Docker Image
+      - name: Build Backend Docker Image
         run: |
-          docker build -t 8byte-app:${IMAGE_TAG} ./app
+          docker build \
+            -t 8byte-app:${IMAGE_TAG} \
+            ./app
 
       - name: Trivy Image Scan
         uses: aquasecurity/trivy-action@master
@@ -75,7 +77,7 @@ jobs:
           docker push \
             ${{ vars.ECR_REPOSITORY }}:${IMAGE_TAG}
 
-  deploy-staging:
+  deploy-backend:
 
     needs: build
 
@@ -93,17 +95,23 @@ jobs:
       - name: Deploy via SSM
         run: |
 
-          aws ssm send-command \
-            --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${{ vars.BACKEND_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
-            --comment "Deploy application" \
+            --query "Command.CommandId" \
+            --output text \
             --parameters 'commands=[
               "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 891377196933.dkr.ecr.ap-south-1.amazonaws.com",
               "docker pull ${{ vars.ECR_REPOSITORY }}:${{ github.sha }}",
               "docker stop app || true",
               "docker rm app || true",
+              "docker image prune -af || true",
               "docker run -d --restart always --name app -p 80:80 ${{ vars.ECR_REPOSITORY }}:${{ github.sha }}"
-            ]'
+            ]')
+
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ vars.BACKEND_INSTANCE_ID }}"
 
   notify-failure:
 
@@ -111,7 +119,7 @@ jobs:
 
     needs:
       - build
-      - deploy-staging
+      - deploy-backend
 
     runs-on: ubuntu-latest
 
@@ -128,6 +136,7 @@ jobs:
           subject: "8Byte Deployment Failed"
 
           to: ${{ secrets.MAIL_TO }}
+
           from: GitHub Actions
 
           body: |
@@ -136,6 +145,7 @@ jobs:
             Repository: ${{ github.repository }}
             Branch: ${{ github.ref_name }}
             Commit: ${{ github.sha }}
+
             Workflow: ${{ github.workflow }}
 
             Run URL:

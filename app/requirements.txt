@@ -3,3 +3,4 @@ psycopg2-binary
 prometheus-flask-exporter
 pytest
 pytest-cov
+boto3

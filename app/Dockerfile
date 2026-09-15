@@ -1,17 +1,18 @@
 FROM python:3.12-slim
 
 RUN apt-get update && \
-    apt-get install -y nginx
+    apt-get install -y nginx && \
+    apt-get clean
 
 WORKDIR /app
 
 COPY requirements.txt .
 
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-COPY nginx/nginx.conf /etc/nginx/nginx.conf
+COPY nginx/default.conf /etc/nginx/sites-available/default
 
 EXPOSE 80
 
