@@ -1,4 +1,4 @@
-from app.app import main
+from app import main
 
 
 def test_health():
