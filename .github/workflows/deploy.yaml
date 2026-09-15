@@ -37,7 +37,7 @@ jobs:
           pytest app/tests
 
       - name: Trivy Filesystem Scan
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
           scan-ref: .
@@ -58,7 +58,7 @@ jobs:
           docker build -t 8byte-app:${IMAGE_TAG} ./app
 
       - name: Trivy Image Scan
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: 8byte-app:${{ github.sha }}
           severity: HIGH,CRITICAL
