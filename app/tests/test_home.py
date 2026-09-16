@@ -7,4 +7,5 @@ def test_home():
 
     assert response.status_code == 200
 
-    assert response.json["service"] == "8byte Task API"
+    assert response.mimetype == "text/html"
+    assert b"8Byte Task Manager" in response.data
