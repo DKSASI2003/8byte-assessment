@@ -111,7 +111,7 @@ jobs:
 
           aws ssm wait command-executed \
             --command-id "$COMMAND_ID" \
-            --instance-id "${{ vars.BACKEND_INSTANCE_ID }}"
+            --instance-id "${{ vars.EC2_INSTANCE_ID }}"
 
   notify-failure:
 
@@ -137,7 +137,7 @@ jobs:
 
           to: ${{ secrets.MAIL_TO }}
 
-          from: GitHub Actions
+          from: ${{ secrets.SMTP_USERNAME }}
 
           body: |
             Deployment failed.
