@@ -2,7 +2,7 @@ from unittest.mock import patch, MagicMock
 from app.app import app
 
 
-@patch("app.get_connection")
+@patch("app.app.get_connection")
 def test_get_tasks(mock_get_connection):
 
     mock_conn = MagicMock()
