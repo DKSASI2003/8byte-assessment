@@ -96,12 +96,12 @@ jobs:
         run: |
 
           COMMAND_ID=$(aws ssm send-command \
-            --instance-ids "${{ vars.BACKEND_INSTANCE_ID }}" \
+            --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --query "Command.CommandId" \
             --output text \
             --parameters 'commands=[
-              "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 891377196933.dkr.ecr.ap-south-1.amazonaws.com",
+              "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ vars.ECR_REPOSITORY }}",
               "docker pull ${{ vars.ECR_REPOSITORY }}:${{ github.sha }}",
               "docker stop app || true",
               "docker rm app || true",
