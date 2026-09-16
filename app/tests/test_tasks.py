@@ -1,5 +1,5 @@
 from unittest.mock import patch, MagicMock
-from app import app
+from app.app import app
 
 
 @patch("app.get_connection")
