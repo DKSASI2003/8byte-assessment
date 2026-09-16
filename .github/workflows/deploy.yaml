@@ -1,152 +1,171 @@
-name: Build and Deploy
+name: CI/CD
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
 
 env:
+  AWS_REGION: ap-south-1
   IMAGE_TAG: ${{ github.sha }}
 
+permissions:
+  contents: read
+
 jobs:
-
-  build:
-
+  test:
+    name: Unit and integration tests
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-
     steps:
-
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install Dependencies
-        run: |
-          pip install -r app/requirements.txt
-          pip install pytest
+      - name: Install dependencies
+        run: pip install -r app/requirements.txt
 
-      - name: Run Unit Tests
-        run: |
-          python -m pytest
+      - name: Run unit and integration tests
+        run: python -m pytest -q
 
-      - name: Trivy Filesystem Scan
+      - name: Audit Python dependencies
+        run: |
+          python -m pip install pip-audit
+          pip-audit -r app/requirements.txt
+
+      - name: Scan repository for vulnerabilities
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
           scan-ref: .
           severity: HIGH,CRITICAL
+          exit-code: 1
 
-      - name: Configure AWS Credentials
+  build-and-push:
+    name: Build, scan, and push image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
+      - name: Log in to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build Backend Docker Image
-        run: |
-          docker build \
-            -t 8byte-app:${IMAGE_TAG} \
-            ./app
+      - name: Build Docker image
+        run: docker build -t 8byte-app:${IMAGE_TAG} ./app
 
-      - name: Trivy Image Scan
+      - name: Scan Docker image
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 8byte-app:${{ github.sha }}
           severity: HIGH,CRITICAL
-          exit-code: 0
+          exit-code: 1
 
-      - name: Tag Docker Image
-        run: |
-          docker tag \
-            8byte-app:${IMAGE_TAG} \
-            ${{ vars.ECR_REPOSITORY }}:${IMAGE_TAG}
+      - name: Tag Docker image
+        run: docker tag 8byte-app:${IMAGE_TAG} ${{ vars.ECR_REPOSITORY }}:${IMAGE_TAG}
 
-      - name: Push Docker Image
-        run: |
-          docker push \
-            ${{ vars.ECR_REPOSITORY }}:${IMAGE_TAG}
+      - name: Push Docker image
+        run: docker push ${{ vars.ECR_REPOSITORY }}:${IMAGE_TAG}
 
-  deploy-backend:
-
-    needs: build
-
+  deploy-staging:
+    name: Deploy to staging
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-and-push
     runs-on: ubuntu-latest
+    environment: staging
 
     steps:
-
-      - name: Configure AWS Credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy via SSM
+      - name: Deploy image with SSM
+        env:
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          INSTANCE_ID: ${{ vars.STAGING_INSTANCE_ID }}
         run: |
-
+          ECR_REGISTRY="${ECR_REPOSITORY%%/*}"
           COMMAND_ID=$(aws ssm send-command \
-            --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
+            --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --query "Command.CommandId" \
             --output text \
-            --parameters 'commands=[
-              "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ vars.ECR_REPOSITORY }}",
-              "docker pull ${{ vars.ECR_REPOSITORY }}:${{ github.sha }}",
-              "docker stop app || true",
-              "docker rm app || true",
-              "docker image prune -af || true",
-              "docker run -d --restart always --name app -p 80:80 ${{ vars.ECR_REPOSITORY }}:${{ github.sha }}"
-            ]')
+            --parameters "commands=[\"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY\",\"docker pull $ECR_REPOSITORY:$IMAGE_TAG\",\"docker stop app || true\",\"docker rm app || true\",\"docker run -d --restart always --name app -p 80:80 $ECR_REPOSITORY:$IMAGE_TAG\"]")
+          aws ssm wait command-executed --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID"
 
-          aws ssm wait command-executed \
-            --command-id "$COMMAND_ID" \
-            --instance-id "${{ vars.EC2_INSTANCE_ID }}"
+  deploy-production:
+    name: Deploy to production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy image with SSM
+        env:
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          INSTANCE_ID: ${{ vars.PRODUCTION_INSTANCE_ID }}
+        run: |
+          ECR_REGISTRY="${ECR_REPOSITORY%%/*}"
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --query "Command.CommandId" \
+            --output text \
+            --parameters "commands=[\"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY\",\"docker pull $ECR_REPOSITORY:$IMAGE_TAG\",\"docker stop app || true\",\"docker rm app || true\",\"docker run -d --restart always --name app -p 80:80 $ECR_REPOSITORY:$IMAGE_TAG\"]")
+          aws ssm wait command-executed --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID"
 
   notify-failure:
-
-    if: failure()
-
+    name: Notify on failure
+    if: ${{ always() && (needs.test.result == 'failure' || needs.build-and-push.result == 'failure' || needs.deploy-staging.result == 'failure' || needs.deploy-production.result == 'failure') }}
     needs:
-      - build
-      - deploy-backend
-
+      - test
+      - build-and-push
+      - deploy-staging
+      - deploy-production
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Send Failure Email
+      - name: Send failure email
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.SMTP_SERVER }}
           server_port: ${{ secrets.SMTP_PORT }}
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-
-          subject: "8Byte Deployment Failed"
-
+          subject: "8Byte CI/CD failed"
           to: ${{ secrets.MAIL_TO }}
-
           from: ${{ secrets.SMTP_USERNAME }}
-
           body: |
-            Deployment failed.
-
+            CI/CD failed.
             Repository: ${{ github.repository }}
             Branch: ${{ github.ref_name }}
             Commit: ${{ github.sha }}
-
-            Workflow: ${{ github.workflow }}
-
-            Run URL:
-            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

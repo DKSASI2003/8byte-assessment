@@ -3,7 +3,23 @@ output "alb_dns" {
 }
 
 output "instance_public_ip" {
-  value = aws_instance.app.public_ip
+  value = aws_instance.app["production"].public_ip
+}
+
+output "staging_instance_id" {
+  value = aws_instance.app["staging"].id
+}
+
+output "production_instance_id" {
+  value = aws_instance.app["production"].id
+}
+
+output "staging_instance_public_ip" {
+  value = aws_instance.app["staging"].public_ip
+}
+
+output "production_instance_public_ip" {
+  value = aws_instance.app["production"].public_ip
 }
 
 output "rds_endpoint" {
