@@ -54,7 +54,7 @@ def create_task():
 
     return {"status": "created"}
 
-if __name__ == "__app__":
+if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=5000
