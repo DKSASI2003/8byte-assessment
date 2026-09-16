@@ -8,6 +8,11 @@ resource "aws_cloudwatch_log_group" "system" {
   retention_in_days = 30
 }
 
+resource "aws_cloudwatch_log_group" "access" {
+  name              = "access-logs"
+  retention_in_days = 30
+}
+
 resource "aws_s3_bucket" "alb_logs" {
   bucket = var.alb_logs_bucket_name
 
