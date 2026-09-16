@@ -38,6 +38,18 @@
         "measurement": [
           "inodes_free",
           "used_percent"
+        ],
+        "ignore_file_system_types": [
+          "overlay",
+          "aufs",
+          "squashfs",
+          "tmpfs",
+          "devtmpfs",
+          "proc",
+          "sysfs",
+          "devpts",
+          "cgroup",
+          "cgroup2"
         ]
       },
 

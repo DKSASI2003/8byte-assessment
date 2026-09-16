@@ -9,6 +9,7 @@ dnf update -y
 
 dnf install -y \
   docker \
+  rsyslog \
   unzip \
   wget
 
@@ -36,6 +37,9 @@ systemctl daemon-reload
 
 systemctl enable docker
 systemctl start docker
+
+systemctl enable rsyslog
+systemctl start rsyslog
 
 systemctl enable amazon-ssm-agent
 systemctl start amazon-ssm-agent

@@ -49,3 +49,11 @@ output "ecr_repository_name" {
 output "alb_logs_bucket" {
   value = aws_s3_bucket.alb_logs.id
 }
+
+output "infrastructure_dashboard_name" {
+  value = aws_cloudwatch_dashboard.infrastructure.dashboard_name
+}
+
+output "application_dashboard_name" {
+  value = aws_cloudwatch_dashboard.application.dashboard_name
+}
