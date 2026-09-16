@@ -10,10 +10,10 @@ Internet
 	 +--> Staging ALB --> Staging EC2 --> RDS PostgreSQL
 	 |
 	 +--> Production ALB --> Production EC2 --> RDS PostgreSQL
-																	|
-																	+--> ECR
-																	+--> Secrets Manager
-																	+--> CloudWatch
+	 |
+	 +--> ECR
+	 +--> Secrets Manager
+	 +--> CloudWatch
 ```
 
 The main components are:
