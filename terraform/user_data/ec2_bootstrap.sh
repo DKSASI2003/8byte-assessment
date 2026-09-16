@@ -12,6 +12,13 @@ dnf install -y \
   unzip \
   wget
 
+if ! rpm -q amazon-cloudwatch-agent; then
+  wget -O /tmp/amazon-cloudwatch-agent.rpm \
+    https://amazoncloudwatch-agent.s3.amazonaws.com/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
+
+  rpm -Uvh /tmp/amazon-cloudwatch-agent.rpm
+fi
+
 # Install SSM Agent
 
 dnf install -y amazon-ssm-agent || true
@@ -36,5 +43,17 @@ systemctl start amazon-ssm-agent
 usermod -aG docker ec2-user
 
 mkdir -p /opt/app
+
+mkdir -p /opt/aws/amazon-cloudwatch-agent/etc
+cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<'AGENT_CONFIG'
+${cloudwatch_agent_config}
+AGENT_CONFIG
+
+systemctl enable amazon-cloudwatch-agent
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config \
+  -m ec2 \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
+  -s
 
 echo "Bootstrap completed successfully"

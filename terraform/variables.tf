@@ -12,7 +12,7 @@ variable "instance_type" {
 
 variable "volume_size" {
   default = 20
-  
+
 }
 
 variable "volume_type" {
@@ -20,4 +20,8 @@ variable "volume_type" {
 }
 variable "db_name" {
   default = "appdb"
+}
+
+variable "alb_logs_bucket_name" {
+  default = "8byte-alb-logs-891377196933"
 }

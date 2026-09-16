@@ -30,7 +30,9 @@ resource "aws_instance" "app" {
   }
 
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
-  user_data            = file("${path.module}/user_data/ec2_bootstrap.sh")
+  user_data = templatefile("${path.module}/user_data/ec2_bootstrap.sh", {
+    cloudwatch_agent_config = file("${path.module}/../monitoring/cloudwatch/cloudwatch-agent.json")
+  })
 
   tags = {
     Name        = "8byte-${each.key}-app"
