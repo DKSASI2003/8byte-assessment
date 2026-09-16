@@ -1,4 +1,4 @@
-# 8Byte Task API
+# 8Byte Assessment
 
 AWS infrastructure and CI/CD deployment for a Flask task API running on Amazon Linux EC2 behind separate staging and production Application Load Balancers.
 
