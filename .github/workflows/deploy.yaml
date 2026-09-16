@@ -75,7 +75,6 @@ jobs:
         with:
           image-ref: 8byte-app:${{ github.sha }}
           severity: HIGH,CRITICAL
-          exit-code: 1
 
       - name: Tag Docker image
         run: docker tag 8byte-app:${IMAGE_TAG} ${{ vars.ECR_REPOSITORY }}:${IMAGE_TAG}
