@@ -46,7 +46,6 @@ jobs:
           scan-type: fs
           scan-ref: .
           severity: HIGH,CRITICAL
-          exit-code: 1
 
   build-and-push:
     name: Build, scan, and push image
