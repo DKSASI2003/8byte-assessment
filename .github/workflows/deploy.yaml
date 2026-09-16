@@ -108,7 +108,7 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --query "Command.CommandId" \
             --output text \
-            --parameters "commands=[\"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY\",\"docker pull $ECR_REPOSITORY:$IMAGE_TAG\",\"docker stop app || true\",\"docker rm app || true\",\"docker run -d --restart always --name app -p 80:80 $ECR_REPOSITORY:$IMAGE_TAG\"]")
+            --parameters "commands=[\"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY\",\"docker pull $ECR_REPOSITORY:$IMAGE_TAG\",\"docker stop app || true\",\"docker rm app || true\",\"docker run -d --restart always --name app --log-driver=awslogs --log-opt awslogs-region=$AWS_REGION --log-opt awslogs-group=8byte-app --log-opt awslogs-stream=staging-$IMAGE_TAG -p 80:80 $ECR_REPOSITORY:$IMAGE_TAG\"]")
           aws ssm wait command-executed --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID"
 
   deploy-production:
@@ -137,7 +137,7 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --query "Command.CommandId" \
             --output text \
-            --parameters "commands=[\"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY\",\"docker pull $ECR_REPOSITORY:$IMAGE_TAG\",\"docker stop app || true\",\"docker rm app || true\",\"docker run -d --restart always --name app -p 80:80 $ECR_REPOSITORY:$IMAGE_TAG\"]")
+            --parameters "commands=[\"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY\",\"docker pull $ECR_REPOSITORY:$IMAGE_TAG\",\"docker stop app || true\",\"docker rm app || true\",\"docker run -d --restart always --name app --log-driver=awslogs --log-opt awslogs-region=$AWS_REGION --log-opt awslogs-group=8byte-app --log-opt awslogs-stream=production-$IMAGE_TAG -p 80:80 $ECR_REPOSITORY:$IMAGE_TAG\"]")
           aws ssm wait command-executed --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID"
 
   notify-failure:

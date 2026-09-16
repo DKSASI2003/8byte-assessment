@@ -1,0 +1,57 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "ALB Request Rate and Latency",
+        "region": "${aws_region}",
+        "view": "timeSeries",
+        "stat": "Average",
+        "period": 300,
+        "metrics": [
+          ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "${staging_load_balancer_arn}", {"label": "Staging requests", "stat": "Sum"}],
+          ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "${production_load_balancer_arn}", {"label": "Production requests", "stat": "Sum"}],
+          ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", "${staging_load_balancer_arn}", {"label": "Staging latency (seconds)"}],
+          ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", "${production_load_balancer_arn}", {"label": "Production latency (seconds)"}]
+        ]
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "ALB Target Errors",
+        "region": "${aws_region}",
+        "view": "timeSeries",
+        "stat": "Sum",
+        "period": 300,
+        "metrics": [
+          ["AWS/ApplicationELB", "HTTPCode_Target_4XX_Count", "LoadBalancer", "${staging_load_balancer_arn}", {"label": "Staging 4XX"}],
+          ["AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", "${staging_load_balancer_arn}", {"label": "Staging 5XX"}],
+          ["AWS/ApplicationELB", "HTTPCode_Target_4XX_Count", "LoadBalancer", "${production_load_balancer_arn}", {"label": "Production 4XX"}],
+          ["AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", "${production_load_balancer_arn}", {"label": "Production 5XX"}]
+        ]
+      }
+    },
+    {
+      "type": "log",
+      "x": 0,
+      "y": 6,
+      "width": 24,
+      "height": 8,
+      "properties": {
+        "title": "Recent Application Logs",
+        "region": "${aws_region}",
+        "view": "table",
+        "query": "SOURCE '8byte-app' | fields @timestamp,@message | sort @timestamp desc | limit 50"
+      }
+    }
+  ]
+}

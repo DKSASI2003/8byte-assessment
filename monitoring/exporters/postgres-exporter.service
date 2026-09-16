@@ -1,4 +1,0 @@
-docker run -d \
--p 9187:9187 \
--e DATA_SOURCE_NAME="postgresql://postgres:password@rds-endpoint:5432/appdb?sslmode=disable" \
-prometheuscommunity/postgres-exporter

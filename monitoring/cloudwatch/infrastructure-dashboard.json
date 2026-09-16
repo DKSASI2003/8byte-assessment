@@ -1,0 +1,83 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Staging EC2 Infrastructure",
+        "region": "${aws_region}",
+        "view": "timeSeries",
+        "stat": "Average",
+        "period": 300,
+        "metrics": [
+          ["AWS/EC2", "CPUUtilization", "InstanceId", "${staging_instance_id}", {"label": "CPU utilization (%)"}],
+          ["8Byte", "mem_used_percent", "InstanceId", "${staging_instance_id}", {"label": "Memory used (%)"}],
+          ["8Byte", "disk_used_percent", "InstanceId", "${staging_instance_id}", {"label": "Disk used (%)"}],
+          ["AWS/EC2", "NetworkIn", "InstanceId", "${staging_instance_id}", {"label": "Network in (bytes)"}],
+          ["AWS/EC2", "NetworkOut", "InstanceId", "${staging_instance_id}", {"label": "Network out (bytes)"}]
+        ]
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 6,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Production EC2 Infrastructure",
+        "region": "${aws_region}",
+        "view": "timeSeries",
+        "stat": "Average",
+        "period": 300,
+        "metrics": [
+          ["AWS/EC2", "CPUUtilization", "InstanceId", "${production_instance_id}", {"label": "CPU utilization (%)"}],
+          ["8Byte", "mem_used_percent", "InstanceId", "${production_instance_id}", {"label": "Memory used (%)"}],
+          ["8Byte", "disk_used_percent", "InstanceId", "${production_instance_id}", {"label": "Disk used (%)"}],
+          ["AWS/EC2", "NetworkIn", "InstanceId", "${production_instance_id}", {"label": "Network in (bytes)"}],
+          ["AWS/EC2", "NetworkOut", "InstanceId", "${production_instance_id}", {"label": "Network out (bytes)"}]
+        ]
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "RDS PostgreSQL",
+        "region": "${aws_region}",
+        "view": "timeSeries",
+        "stat": "Average",
+        "period": 300,
+        "metrics": [
+          ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "${rds_instance_identifier}", {"label": "CPU utilization (%)"}],
+          ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", "${rds_instance_identifier}", {"label": "Database connections"}],
+          ["AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", "${rds_instance_identifier}", {"label": "Free storage (bytes)"}]
+        ]
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 6,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "ALB Healthy Hosts",
+        "region": "${aws_region}",
+        "view": "timeSeries",
+        "stat": "Average",
+        "period": 300,
+        "metrics": [
+          ["AWS/ApplicationELB", "HealthyHostCount", "TargetGroup", "${staging_target_group_arn}", "LoadBalancer", "${staging_load_balancer_arn}", {"label": "Staging"}],
+          ["AWS/ApplicationELB", "HealthyHostCount", "TargetGroup", "${production_target_group_arn}", "LoadBalancer", "${production_load_balancer_arn}", {"label": "Production"}]
+        ]
+      }
+    }
+  ]
+}
