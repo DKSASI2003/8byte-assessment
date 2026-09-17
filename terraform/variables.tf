@@ -1,27 +1,39 @@
 variable "aws_region" {
-  default = "ap-south-1"
+  type = string
 }
 
 variable "vpc_cidr" {
-  default = "10.0.0.0/16"
+  type = string
 }
 
 variable "instance_type" {
-  default = "t3.micro"
+  type = string
 }
 
 variable "volume_size" {
-  default = 20
-
+  type = number
 }
 
 variable "volume_type" {
-  default = "gp3"
+  type = string
 }
+
 variable "db_name" {
-  default = "appdb"
+  type = string
 }
 
 variable "alb_logs_bucket_name" {
-  default = "8byte-alb-logs-891377196933"
+  type = string
+}
+
+variable "application_log_group_name" {
+  type = string
+}
+
+variable "system_log_group_name" {
+  type = string
+}
+
+variable "access_log_group_name" {
+  type = string
 }

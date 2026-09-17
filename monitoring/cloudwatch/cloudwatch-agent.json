@@ -1,15 +1,15 @@
 {
   "agent": {
     "metrics_collection_interval": 60,
-    "region": "ap-south-1"
+    "region": "${aws_region}"
   },
 
   "metrics": {
     "namespace": "8Byte",
     "append_dimensions": {
-      "InstanceId": "${aws:InstanceId}",
-      "InstanceType": "${aws:InstanceType}",
-      "ImageId": "${aws:ImageId}"
+      "InstanceId": "$${aws:InstanceId}",
+      "InstanceType": "$${aws:InstanceType}",
+      "ImageId": "$${aws:ImageId}"
     },
     "aggregation_dimensions": [
       [
@@ -114,12 +114,12 @@
 
           {
             "file_path": "/var/log/messages",
-            "log_group_name": "ec2-system"
+            "log_group_name": "${system_log_group}"
           },
 
           {
             "file_path": "/var/log/nginx/access.log",
-            "log_group_name": "access-logs"
+            "log_group_name": "${access_log_group}"
           }
         ]
       }
