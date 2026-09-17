@@ -26,6 +26,11 @@ variable "alb_logs_bucket_name" {
   type = string
 }
 
+variable "my_ip_address" {
+  type        = string
+  description = "Public IPv4 address allowed to access the ALB and EC2 over SSH"
+}
+
 variable "application_log_group_name" {
   type = string
 }

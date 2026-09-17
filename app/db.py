@@ -23,3 +23,20 @@ def get_connection():
         password=creds["password"],
         dbname=creds["dbname"]
     )
+
+def init_db():
+    conn = get_connection()
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    title TEXT NOT NULL
+                )
+                """
+            )
+        conn.commit()
+    finally:
+        conn.close()

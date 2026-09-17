@@ -6,7 +6,7 @@ resource "aws_security_group" "alb" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["223.185.21.48/32"] #my-ipaddr
+    cidr_blocks = ["${var.my_ip_address}/32"]
   }
 
   egress {
@@ -32,7 +32,7 @@ resource "aws_security_group" "ec2" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${var.my_ip_address}/32"]
   }
 
   egress {

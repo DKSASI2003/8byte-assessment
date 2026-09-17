@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, send_file
-from app.db import get_connection
+from app.db import get_connection, init_db
 
 app = Flask(__name__)
 
@@ -55,6 +55,8 @@ def create_task():
     return {"status": "created"}
 
 if __name__ == "__main__":
+    init_db()
+
     app.run(
         host="0.0.0.0",
         port=5000
