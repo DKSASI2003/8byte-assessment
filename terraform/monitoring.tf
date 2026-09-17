@@ -1,15 +1,15 @@
 resource "aws_cloudwatch_log_group" "application" {
-  name              = "8byte-app"
+  name              = var.application_log_group_name
   retention_in_days = 30
 }
 
 resource "aws_cloudwatch_log_group" "system" {
-  name              = "ec2-system"
+  name              = var.system_log_group_name
   retention_in_days = 30
 }
 
 resource "aws_cloudwatch_log_group" "access" {
-  name              = "access-logs"
+  name              = var.access_log_group_name
   retention_in_days = 30
 }
 

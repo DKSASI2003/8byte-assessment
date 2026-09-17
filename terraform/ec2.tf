@@ -31,8 +31,18 @@ resource "aws_instance" "app" {
 
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
   user_data = templatefile("${path.module}/user_data/ec2_bootstrap.sh", {
-    cloudwatch_agent_config = file("${path.module}/../monitoring/cloudwatch/cloudwatch-agent.json")
+    cloudwatch_agent_config = templatefile("${path.module}/../monitoring/cloudwatch/cloudwatch-agent.json", {
+      aws_region       = var.aws_region
+      system_log_group = var.system_log_group_name
+      access_log_group = var.access_log_group_name
+    })
   })
+
+  depends_on = [
+    aws_cloudwatch_log_group.application,
+    aws_cloudwatch_log_group.system,
+    aws_cloudwatch_log_group.access
+  ]
 
   tags = {
     Name        = "8byte-${each.key}-app"
